@@ -56,8 +56,10 @@ ul { list-style: none; }
 .section-navy { background: var(--navy); color: #eef2f5; }
 .section-tight-top { padding-top: 60px; }
 
-.page-fade { animation: pageIn 0.45s ease both; }
-@keyframes pageIn { from { opacity: 0; transform: translateY(8px); } to { opacity: 1; transform: none; } }
+/* Page enter: movement only. Fading opacity let the white <body> show through
+   the dark hero as a grey flash on every load. */
+.page-fade { animation: pageIn 0.5s cubic-bezier(0.2, 0.7, 0.2, 1) both; }
+@keyframes pageIn { from { transform: translateY(10px); } to { transform: none; } }
 
 /* ---------- Eyebrow / headings ---------- */
 .eyebrow {
@@ -146,7 +148,6 @@ ul { list-style: none; }
 .hero-grid { position: relative; z-index: 2; display: grid; grid-template-columns: 1.06fr 0.94fr; gap: 56px; align-items: center; padding-top: 84px; padding-bottom: 96px; }
 .hero-copy h1 { font-family: var(--font-head); font-size: clamp(46px, 6vw, 74px); line-height: 1.04; font-weight: 800; margin: 20px 0 22px; letter-spacing: -0.01em; }
 .hero-lead { font-size: 18px; color: #dde5ea; max-width: 620px; }
-.hero-lead::first-letter { text-transform: uppercase; }
 .hero-actions { display: flex; gap: 14px; flex-wrap: wrap; margin-top: 34px; }
 .hero-trust { display: flex; flex-direction: column; gap: 12px; margin-top: 40px; padding-top: 26px; border-top: 1px solid rgba(255, 255, 255, 0.16); font-size: 15px; color: #d5dde2; max-width: 560px; }
 .hero-trust li { display: flex; gap: 11px; align-items: center; }
@@ -181,11 +182,17 @@ ul { list-style: none; }
 .hero .anim { animation: heroUp 0.7s cubic-bezier(0.2, 0.7, 0.2, 1) both; animation-delay: var(--d, 0ms); }
 .hero .anim-visual { animation: heroVisualIn 0.9s cubic-bezier(0.2, 0.7, 0.2, 1) both; animation-delay: var(--d, 0ms); }
 .hero-copy h1 em { position: relative; }
-.hero-copy h1 em::after { content: ""; position: absolute; left: 0; right: 0; bottom: 4px; height: 4px; border-radius: 2px; background: linear-gradient(90deg, var(--gold-2), var(--gold-3)); transform: scaleX(0); transform-origin: left; animation: drawLine 0.8s 0.85s cubic-bezier(0.2, 0.7, 0.2, 1) forwards; }
-.hero-float-card { animation: floatY 5s ease-in-out 1.4s infinite; }
+.hero-copy h1 em::after { content: ""; position: absolute; left: 0; right: 0.1em; bottom: 4px; height: 4px; border-radius: 2px; background: linear-gradient(90deg, var(--gold-2), var(--gold-3)); transform: scaleX(0); transform-origin: left; animation: drawLine 0.8s 1.1s cubic-bezier(0.2, 0.7, 0.2, 1) forwards; }
+/* Float a few times, then settle — an endless bob reads like an ad. */
+.hero-float-card { animation: floatY 4.5s ease-in-out 1.6s 3; }
 
 /* ---------- Marquee ---------- */
 .marquee { background: linear-gradient(90deg, var(--gold-2), var(--gold-3)); color: var(--navy); overflow: hidden; padding: 13px 0; }
+.marquee { position: relative; }
+.marquee::before, .marquee::after { content: ""; position: absolute; top: 0; bottom: 0; width: 90px; z-index: 1; pointer-events: none; }
+.marquee::before { left: 0; background: linear-gradient(90deg, var(--gold-2), rgba(212, 175, 55, 0)); }
+.marquee::after { right: 0; background: linear-gradient(270deg, var(--gold-3), rgba(223, 154, 43, 0)); }
+.marquee:hover .marquee-track { animation-play-state: paused; }
 .marquee-track { display: flex; gap: 0; width: max-content; animation: marquee 38s linear infinite; }
 .marquee-item { display: inline-flex; align-items: center; gap: 26px; padding-right: 26px; font-size: 13.5px; font-weight: 800; letter-spacing: 0.18em; text-transform: uppercase; white-space: nowrap; }
 .marquee-dot { font-size: 9px; color: rgba(11, 28, 45, 0.55); }
@@ -284,7 +291,7 @@ ul { list-style: none; }
 }
 .field input:focus, .field select:focus, .field textarea:focus { border-color: var(--gold); background: #fff; outline: none; box-shadow: 0 0 0 3px rgba(201, 161, 74, 0.22); }
 .field textarea { resize: vertical; min-height: 120px; }
-.form-submit-row { margin-top: 20px; }
+.form-submit-row { margin-top: 20px; display: grid; grid-template-columns: 1.4fr 1fr; gap: 12px; }
 .form-success { margin-top: 16px; background: #eef7ee; border: 1px solid #b9d9b9; color: #245c24; border-radius: 10px; padding: 12px 14px; font-size: 14.5px; }
 .form-note { font-size: 13.5px; color: var(--muted); margin-top: 14px; }
 .form-note a { color: var(--gold-deep); font-weight: 700; }
@@ -438,7 +445,8 @@ ul { list-style: none; }
 .newsletter-form input { flex: 1; min-width: 0; font: inherit; font-size: 15px; padding: 13px 14px; border: 1.5px solid rgba(255, 255, 255, 0.25); border-right: none; border-radius: 10px 0 0 10px; background: rgba(255, 255, 255, 0.06); color: #fff; }
 .newsletter-form input::placeholder { color: #999ea5; }
 .newsletter-form button { border: none; border-radius: 0 10px 10px 0; background: linear-gradient(135deg, var(--gold-2), var(--gold-3)); color: var(--navy); font: inherit; font-size: 14.5px; font-weight: 800; padding: 13px 18px; cursor: pointer; white-space: nowrap; }
-.footer-bar { border-top: 1px solid rgba(255, 255, 255, 0.12); padding: 20px 0; font-size: 14px; }
+/* Extra bottom room so the fixed WhatsApp / back-to-top buttons never cover the copyright line. */
+.footer-bar { border-top: 1px solid rgba(255, 255, 255, 0.12); padding: 20px 0 88px; font-size: 14px; }
 .footer-bar .container { display: flex; justify-content: space-between; gap: 12px; flex-wrap: wrap; }
 .footer-bar a { color: var(--gold-2); font-weight: 700; }
 
@@ -463,6 +471,198 @@ ul { list-style: none; }
 .reveal.visible { opacity: 1; transform: none; }
 .not-found { text-align: center; max-width: 640px; }
 .not-found h1 { font-family: var(--font-head); font-size: clamp(36px, 5vw, 52px); color: var(--navy); margin: 16px 0 12px; }
+
+
+/* =====================================================================
+   Motion layer
+   One easing for everything so the site moves with one "voice".
+   Individual translate / scale properties are used where an element
+   also has a hover transform, so the two never fight.
+   ===================================================================== */
+:root { --ease-out: cubic-bezier(0.2, 0.7, 0.2, 1); --ease-io: cubic-bezier(0.65, 0, 0.35, 1); }
+/* Images start slightly zoomed before they reveal; clip-path hides the extra
+   but it still counts as page width, so clip sideways overflow here
+   (clip, not hidden, so nothing becomes a scroll container). */
+main { overflow-x: clip; }
+
+/* ---- Scroll progress bar (CSS scroll timeline; hidden where unsupported) ---- */
+.scroll-progress { display: none; }
+@supports (animation-timeline: scroll()) {
+  .scroll-progress {
+    display: block; position: fixed; top: 0; left: 0; right: 0; height: 3px; z-index: 100; pointer-events: none;
+    background: linear-gradient(90deg, var(--gold), var(--gold-2), var(--gold-3));
+    transform-origin: left; animation: progressGrow linear both; animation-timeline: scroll(root);
+  }
+  @keyframes progressGrow { from { transform: scaleX(0); } to { transform: scaleX(1); } }
+}
+
+/* ---- Hero: typewriter firm name (write → hold → erase → write again) ---- */
+.typewriter { position: relative; }
+/* Each letter is always laid out (so nothing reflows); hidden ones are just transparent. */
+.tw-char {
+  opacity: 0; filter: blur(8px);
+  transition: opacity 0.38s ease, filter 0.45s var(--ease-out);
+}
+.tw-char.on { opacity: 1; filter: blur(0); }
+/* Particle canvas (sparks / dust) sits over the letters, never blocks clicks. */
+.tw-particles { position: absolute; pointer-events: none; z-index: 2; }
+/* Cursor: placed by JS after the last visible letter, glides there instead of jumping. */
+.tw-caret {
+  position: absolute; width: 0.065em; margin-left: 0.05em; border-radius: 2px;
+  background: linear-gradient(180deg, var(--gold-2), var(--gold-3));
+  box-shadow: 0 0 12px rgba(212, 175, 55, 0.55);
+  transition: left 0.16s var(--ease-out), top 0.25s var(--ease-out);
+  animation: caretBlink 1.1s ease-in-out infinite;
+}
+.tw-caret.is-busy { animation: none; opacity: 1; } /* solid while typing / erasing */
+@keyframes caretBlink { 0%, 45% { opacity: 1; } 55%, 100% { opacity: 0.1; } }
+/* The gold underline under "& Co." draws in only once the name is complete. */
+.typewriter em::after { animation: none; transition: transform 0.6s var(--ease-out); }
+.typewriter.is-done em::after { transform: scaleX(1); }
+.hero-eyebrow { flex-wrap: wrap; row-gap: 4px; }
+.eyebrow-sep { color: var(--gold); }
+
+/* ---- Hero: ambient motion ---- */
+.hero-glow-a { animation: glowDrift 16s ease-in-out infinite; }
+.hero-glow-b { animation: glowDrift 20s ease-in-out -6s infinite reverse; }
+@keyframes glowDrift { 0%, 100% { translate: 0 0; } 50% { translate: -60px 40px; } }
+
+/* ---- Hero image: mouse tilt (values come from useTilt) ---- */
+.hero-visual { perspective: 1100px; }
+.hero-frame { transform: rotateX(var(--rx, 0deg)) rotateY(var(--ry, 0deg)); transition: transform 0.5s var(--ease-out); will-change: transform; }
+
+/* ---- Hero image: gentle floating (up and down, forever) ----
+   Uses the separate `translate` property so it layers on top of the mouse
+   tilt (`transform`) without the two cancelling each other.
+   Starts after the image's entrance animation has finished. */
+.hero-frame { animation: heroFloat 6s ease-in-out 1.2s infinite; }
+@keyframes heroFloat {
+  0%, 100% { translate: 0 0; }
+  50% { translate: 0 -14px; }
+}
+
+/* ---- Section heads: eyebrow, then title (wipe), then sub ---- */
+.section-head.reveal { opacity: 1; transform: none; }
+.section-head.reveal .eyebrow,
+.section-head.reveal .section-sub { opacity: 0; translate: 0 14px; transition: opacity 0.6s var(--ease-out), translate 0.6s var(--ease-out); }
+.section-head.reveal .section-sub { transition-delay: 0.32s; }
+.section-head.reveal .eyebrow::before { transform: scaleX(0); transform-origin: left; transition: transform 0.7s var(--ease-out) 0.1s; }
+.section-head.reveal .section-title {
+  clip-path: inset(0 0 100% 0); translate: 0 26px;
+  transition: clip-path 0.95s var(--ease-io) 0.12s, translate 0.95s var(--ease-out) 0.12s;
+}
+.section-head.reveal.visible .eyebrow,
+.section-head.reveal.visible .section-sub { opacity: 1; translate: none; }
+.section-head.reveal.visible .eyebrow::before { transform: none; }
+.section-head.reveal.visible .section-title { clip-path: inset(-12% -6% -40% -6%); translate: none; }
+.section-title::after { transition-delay: 0.7s; }
+
+/* ---- Images: curtain reveal + the gold offset frame slides into place ---- */
+.reveal .frame img, .frame.reveal img, .reveal .portrait-frame img {
+  clip-path: inset(0 0 100% 0); scale: 1.12;
+  transition: clip-path 1.15s var(--ease-io) 0.1s, scale 1.6s var(--ease-out) 0.1s;
+}
+.reveal .portrait-frame img { clip-path: inset(100% 0 0 0); }
+.reveal.visible .frame img, .frame.reveal.visible img, .reveal.visible .portrait-frame img { clip-path: inset(-25%); scale: 1; }
+.reveal .frame::after, .frame.reveal::after { transform: none; opacity: 0; transition: transform 0.9s var(--ease-out) 0.75s, opacity 0.5s ease 0.75s; }
+.reveal.visible .frame::after, .frame.reveal.visible::after { transform: translate(14px, 14px); opacity: 1; }
+.reveal .portrait-frame::before { opacity: 0; scale: 0.94; transition: opacity 0.8s ease 0.6s, scale 1s var(--ease-out) 0.6s; }
+.reveal.visible .portrait-frame::before { opacity: 1; scale: 1; }
+.reveal .portrait-badge { opacity: 0; translate: 0 12px; transition: opacity 0.5s ease 1s, translate 0.6s var(--ease-out) 1s; }
+.reveal.visible .portrait-badge { opacity: 1; translate: none; }
+
+/* ---- Practice / team cards: image settles from a slight zoom as the card arrives ---- */
+.practice-card.reveal .practice-media-img img, .team-card.reveal .team-media img { scale: 1.16; transition: transform 0.5s ease, filter 0.6s ease, scale 1.4s var(--ease-out); }
+.practice-card.reveal.visible .practice-media-img img, .team-card.reveal.visible .team-media img { scale: 1; }
+.practice-card.reveal .practice-chip { opacity: 0; scale: 0.6; transition: opacity 0.4s ease 0.45s, scale 0.6s cubic-bezier(0.34, 1.56, 0.64, 1) 0.45s; }
+.practice-card.reveal.visible .practice-chip { opacity: 1; scale: 1; }
+
+/* ---- "How can we help" rows: slide in from the right, divider draws across ---- */
+.help-row { position: relative; border-top-color: transparent; }
+.help-row:last-child { border-bottom-color: rgba(255, 255, 255, 0.14); }
+.help-row::before {
+  content: ""; position: absolute; left: 0; right: 0; top: -1px; height: 1px;
+  background: linear-gradient(90deg, var(--gold), rgba(255, 255, 255, 0.14) 45%);
+  transform: scaleX(0); transform-origin: left; transition: transform 1.1s var(--ease-out) 0.15s;
+}
+.help-row.reveal { transform: translateX(36px); }
+.help-row.reveal.visible { transform: none; }
+.help-row.visible::before { transform: none; }
+
+/* ---- Counters pop in one by one ---- */
+.counter.reveal { transform: translateY(14px) scale(0.97); }
+.counter.reveal.visible { transform: none; }
+
+
+/* ---- Hero: floating gold dust (canvas, see components/motion.jsx) ---- */
+.hero-dust { position: absolute; inset: 0; z-index: 1; pointer-events: none; }
+
+/* ---- Hero: scales of justice draw themselves, then the beam tips with scroll ---- */
+.hero-mark { color: rgba(212, 175, 55, 0.13); }
+.scales-art { display: block; overflow: visible; }
+.scales-art .draw { stroke-dasharray: 1; stroke-dashoffset: 1; animation: drawStroke 1.6s var(--ease-io) forwards; animation-delay: calc(0.5s + var(--i, 0) * 0.35s); }
+@keyframes drawStroke { to { stroke-dashoffset: 0; } }
+.scales-beam { transform-box: view-box; transform-origin: 12px 7px; transform: rotate(var(--tilt, 0deg)); }
+/* pans counter-rotate around their hanging point so they always hang straight down */
+.scales-pan-l { transform-box: view-box; transform-origin: 7px 7px; transform: rotate(calc(var(--tilt, 0deg) * -1)); }
+.scales-pan-r { transform-box: view-box; transform-origin: 17px 7px; transform: rotate(calc(var(--tilt, 0deg) * -1)); }
+
+/* ---- Counters: odometer (each digit rolls up to its value) ---- */
+.counter-value { font-variant-numeric: tabular-nums; }
+.odometer { display: inline-flex; }
+.odo-sep { display: inline-block; }
+.odo-digit { display: inline-block; height: 1.1em; line-height: 1.1em; overflow: hidden; }
+.odo-strip { display: flex; flex-direction: column; transition: transform 2.2s cubic-bezier(0.16, 1, 0.3, 1); transition-delay: var(--delay, 0ms); }
+.odo-strip > span { display: block; height: 1.1em; text-align: center; }
+.odometer.run .odo-strip { transform: translateY(calc(var(--to) * -1.1em)); }
+
+/* ---- Practice cards: 3D tilt toward the mouse + moving glare ----
+   The scroll-in reveal uses `translate` and the hover tilt uses `transform`,
+   so the reveal's stagger delay never makes the tilt lag. */
+.practice-card.reveal {
+  position: relative; transform: none; translate: 0 18px;
+  transition: opacity 0.6s ease var(--stagger, 0ms), translate 0.6s ease var(--stagger, 0ms),
+    transform 0.35s var(--ease-out), box-shadow 0.25s ease, border-color 0.25s ease;
+}
+.practice-card.reveal.visible { translate: none; }
+.practice-card.reveal.visible:hover {
+  transform: perspective(900px) translateY(-6px) rotateX(var(--rx, 0deg)) rotateY(var(--ry, 0deg));
+  box-shadow: var(--shadow); border-color: rgba(201, 161, 74, 0.6);
+}
+.practice-glare {
+  position: absolute; inset: 0; z-index: 4; pointer-events: none; border-radius: inherit;
+  background: radial-gradient(circle at var(--gx, 50%) var(--gy, 30%), rgba(255, 255, 255, 0.24), rgba(255, 255, 255, 0) 45%);
+  opacity: 0; transition: opacity 0.3s ease;
+}
+.practice-card:hover .practice-glare { opacity: 1; }
+
+/* ---- Founder: script signature writes itself, then fills with ink ---- */
+.signature { display: block; width: min(300px, 80%); height: auto; margin: 16px 0 0; overflow: visible; }
+.signature text {
+  font-family: "Mrs Saint Delafield", "Brush Script MT", cursive; font-size: 58px;
+  fill: var(--gold-deep); fill-opacity: 0; stroke: var(--gold); stroke-width: 0.8;
+  stroke-dasharray: 1400; stroke-dashoffset: 1400;
+}
+.reveal.visible .signature text { animation: sigWrite 2.8s var(--ease-io) 0.5s forwards, sigFill 0.8s ease 2.9s forwards; }
+@keyframes sigWrite { to { stroke-dashoffset: 0; } }
+@keyframes sigFill { to { fill-opacity: 1; } }
+.signature-flourish { fill: none; stroke: var(--gold); stroke-width: 1.4; stroke-linecap: round; stroke-dasharray: 1; stroke-dashoffset: 1; }
+.reveal.visible .signature-flourish { animation: drawStroke 1s var(--ease-out) 2.9s forwards; }
+
+/* ---- CTA band: slow cinematic zoom (Ken Burns) ---- */
+@keyframes kenBurns { from { scale: 1; } to { scale: 1.12; } }
+.cta-bg { animation: kenBurns 24s ease-in-out infinite alternate; }
+
+/* ---- Scroll-linked parallax (Chrome / Edge / Safari 26+; ignored elsewhere) ---- */
+.cta-bg { inset: -70px 0; }
+@supports (animation-timeline: view()) {
+  .frame img, .portrait-frame img { animation: parallaxSoft linear both; animation-timeline: view(); }
+  .cta-bg { animation: parallaxBg linear both, kenBurns 24s ease-in-out infinite alternate; animation-timeline: view(), auto; }
+  .banner-bg { animation: parallaxBanner linear both; animation-timeline: scroll(root); animation-range: 0 500px; }
+  @keyframes parallaxSoft { from { translate: 0 22px; } to { translate: 0 -22px; } }
+  @keyframes parallaxBg { from { translate: 0 -60px; } to { translate: 0 60px; } }
+  @keyframes parallaxBanner { from { translate: 0 0; } to { translate: 0 120px; } }
+}
 
 /* ---------- Responsive ---------- */
 @media (max-width: 1024px) {
@@ -521,6 +721,18 @@ ul { list-style: none; }
   .hero-float-card { left: 12px; bottom: 12px; padding: 8px 12px; border-radius: 10px; }
   .hero-float-num { font-size: 20px; }
   .hero-float-label { font-size: 10px; letter-spacing: 0.1em; }
+  /* Phones: short intro so both buttons sit on the first screen */
+  .hero-detail { display: none; }
+  .hero-grid { padding-top: 44px; }
+  .hero-copy h1 { margin: 14px 0 16px; }
+  .hero-actions { margin-top: 26px; }
+  .hero-actions .btn { flex: 1 1 100%; justify-content: center; }
+  .hero-trust { margin-top: 30px; }
+  .hero-eyebrow { flex-direction: row; align-items: center; gap: 4px 8px; font-size: 11px; }
+  .hero-eyebrow::before { display: none; }
+  .form-submit-row { grid-template-columns: 1fr; }
+  .reveal { transform: translateY(12px); }
+  .help-row.reveal { transform: translateX(18px); }
 }
 @media (prefers-reduced-motion: reduce) {
   html { scroll-behavior: auto; }
@@ -530,4 +742,19 @@ ul { list-style: none; }
   .hero .anim, .hero .anim-visual, .hero-float-card { animation: none !important; }
   .hero-copy h1 em::after { animation: none !important; transform: scaleX(1); }
   * { transition: none !important; }
+  .tw-caret { display: none; }
+  .hero-dust { display: none; }
+  .scales-art .draw, .signature-flourish { animation: none !important; stroke-dashoffset: 0; }
+  .signature text { animation: none !important; stroke-dashoffset: 0; fill-opacity: 1; }
+  .odo-strip { transition: none; }
+  .practice-card.reveal { translate: none; }
+  .hero-glow, .hero-mark, .frame img, .portrait-frame img, .cta-bg, .banner-bg, .scroll-progress { animation: none !important; }
+  .section-head.reveal .eyebrow, .section-head.reveal .section-sub, .reveal .portrait-badge { opacity: 1; translate: none; }
+  .section-head.reveal .section-title, .reveal .frame img, .frame.reveal img, .reveal .portrait-frame img { clip-path: none; translate: none; scale: none; }
+  .reveal .frame::after, .frame.reveal::after { opacity: 1; transform: translate(14px, 14px); }
+  .reveal .portrait-frame::before, .practice-card.reveal .practice-chip { opacity: 1; scale: none; }
+  .practice-card.reveal .practice-media-img img, .team-card.reveal .team-media img { scale: none; }
+  .help-row::before, .section-head.reveal .eyebrow::before { transform: none; }
+  .help-row.reveal, .counter.reveal { transform: none; }
+  .hero-frame { transform: none; animation: none !important; }
 }

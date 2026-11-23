@@ -1,7 +1,10 @@
+import { useEffect, useLayoutEffect, useRef, useState } from 'react'
 import { Link } from 'react-router-dom'
 import { FOUNDER_SHORT_BIO, HELP_ITEMS, PRACTICES, SITE } from '../data'
-import { usePageTitle, useReveal } from '../hooks'
+import { usePageTitle, useReveal, useTilt } from '../hooks'
 import Icon from '../icons'
+import { createParticleLayer } from '../components/particles'
+import { HeroDust, ScalesArt, Signature } from '../components/motion'
 import {
   AppointmentForm,
   Counters,
@@ -11,9 +14,145 @@ import {
   SectionHead,
 } from '../components/shared'
 
+// Typewriter: types the firm name, holds, erases it, then types it again (loops).
+// "Tayyib Malik " is plain white, "& Co." is the gold italic part.
+const NAME_PLAIN = 'Tayyib Malik '
+const NAME_GOLD = '& Co.'
+const NAME_FULL = NAME_PLAIN + NAME_GOLD
+const TYPE_MS = 85 // per letter while writing
+const ERASE_MS = 38 // per letter while erasing
+const HOLD_MS = 2600 // full name stays on screen
+const EMPTY_MS = 500 // pause before writing again
+const START_MS = 400 // first letter after page load
+const LETTERS = [...NAME_FULL].map((ch, i) => ({ ch, gold: i >= NAME_PLAIN.length }))
+const SPARK_PAD = 60 // room (px) around the heading for particles to fly into
+
+// How it stays smooth:
+//  - every letter is always in the page; typing/erasing only toggles a class,
+//    so each letter fades in from a soft blur (and fades out) with a CSS transition
+//    instead of popping, and the heading never reflows;
+//  - the cursor is positioned from the last visible letter and slides there
+//    with a transition instead of jumping.
+function TypewriterName() {
+  const reduced =
+    typeof window !== 'undefined' && window.matchMedia('(prefers-reduced-motion: reduce)').matches
+  const [count, setCount] = useState(reduced ? NAME_FULL.length : 0)
+  const [erasing, setErasing] = useState(false)
+  const [caret, setCaret] = useState(null)
+  const [layoutTick, setLayoutTick] = useState(0)
+  const h1Ref = useRef(null)
+  const charRefs = useRef([])
+  const canvasRef = useRef(null)
+  const layerRef = useRef(null)
+  const prevCount = useRef(count)
+
+  // Particle layer: a canvas a little larger than the heading so sparks can fly past its edges.
+  useEffect(() => {
+    if (reduced || !canvasRef.current) return
+    const layer = createParticleLayer(canvasRef.current)
+    const h1 = h1Ref.current
+    if (h1) layer.resize(h1.offsetWidth + SPARK_PAD * 2, h1.offsetHeight + SPARK_PAD * 2)
+    layerRef.current = layer
+    return () => {
+      layer.destroy()
+      layerRef.current = null
+    }
+  }, [reduced])
+
+  useLayoutEffect(() => {
+    const h1 = h1Ref.current
+    if (!layerRef.current || !h1) return
+    layerRef.current.resize(h1.offsetWidth + SPARK_PAD * 2, h1.offsetHeight + SPARK_PAD * 2)
+  }, [layoutTick])
+
+  // Typed a letter → sparks. Erased a letter → it dissolves into rising dust.
+  useEffect(() => {
+    const prev = prevCount.current
+    prevCount.current = count
+    const layer = layerRef.current
+    const h1 = h1Ref.current
+    if (!layer || !h1 || count === prev) return
+    const i = count > prev ? count - 1 : count
+    const el = charRefs.current[i]
+    if (!el || !LETTERS[i].ch.trim()) return // no particles for the space
+    const box = h1.getBoundingClientRect()
+    const r = el.getBoundingClientRect()
+    const rect = { x: r.left - box.left + SPARK_PAD, y: r.top - box.top + SPARK_PAD, w: r.width, h: r.height }
+    if (count > prev) layer.burst(rect, LETTERS[i].gold)
+    else layer.dissolve(rect, LETTERS[i].gold)
+  }, [count])
+
+  // Re-measure the cursor position when the heading's size changes (resize, font load).
+  useEffect(() => {
+    const el = h1Ref.current
+    if (!el || !('ResizeObserver' in window)) return
+    const ro = new ResizeObserver(() => setLayoutTick((t) => t + 1))
+    ro.observe(el)
+    return () => ro.disconnect()
+  }, [])
+
+  useLayoutEffect(() => {
+    const chars = charRefs.current
+    const h1 = h1Ref.current
+    if (!chars[0] || !h1) return
+    // Cursor sits after the last visible letter (or before the first one when empty).
+    // Measured in screen coordinates relative to the <h1>, because the gold <em>
+    // is itself positioned and would skew offsetLeft/offsetTop. (Letters only fade
+    // and un-blur — no transform — so their boxes never move while animating.)
+    const box = h1.getBoundingClientRect()
+    const r = (count > 0 ? chars[count - 1] : chars[0]).getBoundingClientRect()
+    const left = (count > 0 ? r.right : r.left) - box.left
+    setCaret({ left, top: r.top - box.top, height: r.height })
+  }, [count, layoutTick])
+
+  useEffect(() => {
+    if (reduced) return
+    let delay
+    if (!erasing && count < NAME_FULL.length) delay = count === 0 ? START_MS : TYPE_MS
+    else if (!erasing) delay = HOLD_MS
+    else if (count > 0) delay = ERASE_MS
+    else delay = EMPTY_MS
+    const t = setTimeout(() => {
+      if (!erasing && count < NAME_FULL.length) setCount(count + 1)
+      else if (!erasing) setErasing(true)
+      else if (count > 0) setCount(count - 1)
+      else setErasing(false)
+    }, delay)
+    return () => clearTimeout(t)
+  }, [count, erasing, reduced])
+
+  const done = count === NAME_FULL.length
+  const letter = (l, i) => (
+    <span key={i} ref={(el) => (charRefs.current[i] = el)} className={`tw-char${i < count ? ' on' : ''}`}>
+      {l.ch}
+    </span>
+  )
+
+  return (
+    // Screen readers get the full name once; the moving letters are hidden from them.
+    <h1 ref={h1Ref} className={`hero-title typewriter${done ? ' is-done' : ''}`} aria-label="Tayyib Malik & Co.">
+      <span aria-hidden="true">
+        {LETTERS.map((l, i) => (l.gold ? null : letter(l, i)))}
+        <em>{LETTERS.map((l, i) => (l.gold ? letter(l, i) : null))}</em>
+      </span>
+      {!reduced && (
+        <canvas ref={canvasRef} className="tw-particles" aria-hidden="true" style={{ left: -SPARK_PAD, top: -SPARK_PAD }} />
+      )}
+      {caret && (
+        <span
+          aria-hidden="true"
+          className={`tw-caret${erasing || !done ? ' is-busy' : ''}`}
+          style={{ left: caret.left, top: caret.top, height: caret.height }}
+        />
+      )}
+    </h1>
+  )
+}
+
 export default function Home() {
   usePageTitle('Tayyib Malik & Co. | Advocates & Corporate Consultants — Islamabad')
   const ref = useReveal()
+  const tiltRef = useTilt()
 
   return (
     <main ref={ref}>
@@ -21,20 +160,21 @@ export default function Home() {
       <section className="hero">
         <div className="hero-glow hero-glow-a" />
         <div className="hero-glow hero-glow-b" />
+        <HeroDust />
         <div className="hero-mark" aria-hidden="true">
-          <Icon name="scales" size={420} />
+          <ScalesArt />
         </div>
         <div className="container hero-grid">
           <div className="hero-copy">
-            <span className="eyebrow eyebrow-light anim" style={{ '--d': '0ms' }}>
-              <span className="eyebrow-index">Est. Islamabad</span>
-              Advocates &amp; Corporate Consultants
+            <span className="eyebrow eyebrow-light hero-eyebrow anim" style={{ '--d': '0ms' }}>
+              Est. Islamabad <span className="eyebrow-sep" aria-hidden="true">·</span> Advocates &amp; Corporate
+              Consultants
             </span>
-            <h1 className="anim" style={{ '--d': '90ms' }}>
-              Tayyib Malik <em>&amp; Co.</em>
-            </h1>
-            <p className="hero-lead anim" style={{ '--d': '180ms' }}>{SITE.heroIntro}</p>
-            <div className="hero-actions anim" style={{ '--d': '270ms' }}>
+            <TypewriterName />
+            <p className="hero-lead anim" style={{ '--d': '380ms' }}>
+              {SITE.heroIntro} <span className="hero-detail">{SITE.heroDetail}</span>
+            </p>
+            <div className="hero-actions anim" style={{ '--d': '480ms' }}>
               <Link className="btn btn-gold" to="/contact">
                 <Icon name="calendar" size={17} />
                 Free Consultancy
@@ -44,7 +184,7 @@ export default function Home() {
                 <Icon name="arrow" size={17} />
               </Link>
             </div>
-            <ul className="hero-trust anim" style={{ '--d': '360ms' }}>
+            <ul className="hero-trust anim" style={{ '--d': '580ms' }}>
               <li>
                 <Icon name="scales" size={19} />
                 10+ years of courtroom practice
@@ -59,7 +199,7 @@ export default function Home() {
               </li>
             </ul>
           </div>
-          <div className="hero-visual anim-visual" style={{ '--d': '200ms' }}>
+          <div className="hero-visual anim-visual" ref={tiltRef} style={{ '--d': '250ms' }}>
             <div className="hero-frame">
               <img
                 src="/images/hero.jpg"
@@ -118,6 +258,7 @@ export default function Home() {
               />
               <p className="role-line">Advocate High Court</p>
               <p className="body-lg">{FOUNDER_SHORT_BIO}</p>
+              <Signature />
               <div className="chip-row">
                 <span className="chip">
                   <strong>LLM</strong> International Trade Law
@@ -233,7 +374,7 @@ export default function Home() {
                 }
                 sub="We support our clients from strategic advice through effective legal execution."
               />
-              <div className="frame frame-small">
+              <div className="frame frame-small reveal">
                 <img
                   src="/images/help.jpg"
                   alt="Client consultation at Tayyib Malik & Co."
@@ -244,8 +385,8 @@ export default function Home() {
               </div>
             </div>
             <div className="help-rows">
-              {HELP_ITEMS.map((item) => (
-                <article className="help-row reveal" key={item.num}>
+              {HELP_ITEMS.map((item, i) => (
+                <article className="help-row reveal" key={item.num} style={{ transitionDelay: `${i * 90}ms` }}>
                   <span className="help-num">{item.num}</span>
                   <div>
                     <h3>{item.title}</h3>
@@ -268,7 +409,7 @@ export default function Home() {
             <div>
               <div className="frame">
                 <img
-                  src="/images/appointment.jpg"
+                  src="/images/contact-photo.jpg"
                   alt="Book an appointment with Tayyib Malik & Co."
                   width="1024"
                   height="1024"

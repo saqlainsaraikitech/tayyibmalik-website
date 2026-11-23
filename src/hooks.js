@@ -19,7 +19,9 @@ export function useReveal() {
           }
         })
       },
-      { threshold: 0.12, rootMargin: '60px 0px' },
+      // Fire as soon as an element's top edge is ~40px inside the viewport.
+      // (A ratio threshold made tall blocks wait until much of them was on screen.)
+      { threshold: 0, rootMargin: '0px 0px -40px 0px' },
     )
     el.querySelectorAll('.reveal').forEach((n) => io.observe(n))
     if (el.classList.contains('reveal')) io.observe(el)
@@ -28,39 +30,106 @@ export function useReveal() {
   return ref
 }
 
-// Animated counter: counts up to `target` once visible.
-export function useCountUp(target, duration = 1500) {
+// Subtle 3D tilt that follows the mouse (desktop pointers only, respects reduced motion).
+// Writes --rx / --ry custom properties; CSS does the transform.
+export function useTilt(max = 5) {
   const ref = useRef(null)
-  const [value, setValue] = useState(0)
-  const started = useRef(false)
+  useEffect(() => {
+    const el = ref.current
+    if (!el) return
+    const fine = window.matchMedia('(hover: hover) and (pointer: fine)').matches
+    const reduced = window.matchMedia('(prefers-reduced-motion: reduce)').matches
+    if (!fine || reduced) return
+    let frame = 0
+    const move = (e) => {
+      const r = el.getBoundingClientRect()
+      const x = (e.clientX - r.left) / r.width - 0.5
+      const y = (e.clientY - r.top) / r.height - 0.5
+      cancelAnimationFrame(frame)
+      frame = requestAnimationFrame(() => {
+        el.style.setProperty('--ry', `${(x * max).toFixed(2)}deg`)
+        el.style.setProperty('--rx', `${(-y * max).toFixed(2)}deg`)
+      })
+    }
+    const leave = () => {
+      cancelAnimationFrame(frame)
+      el.style.setProperty('--ry', '0deg')
+      el.style.setProperty('--rx', '0deg')
+    }
+    el.addEventListener('pointermove', move)
+    el.addEventListener('pointerleave', leave)
+    return () => {
+      cancelAnimationFrame(frame)
+      el.removeEventListener('pointermove', move)
+      el.removeEventListener('pointerleave', leave)
+    }
+  }, [max])
+  return ref
+}
+
+// True once the element has scrolled into view (stays true).
+export function useInView(threshold = 0.4) {
+  const ref = useRef(null)
+  const [inView, setInView] = useState(false)
   useEffect(() => {
     const el = ref.current
     if (!el) return
     if (!('IntersectionObserver' in window)) {
-      setValue(target)
+      setInView(true)
       return
     }
     const io = new IntersectionObserver(
-      (entries) => {
-        if (entries[0].isIntersecting && !started.current) {
-          started.current = true
-          const t0 = performance.now()
-          const tick = (now) => {
-            const p = Math.min((now - t0) / duration, 1)
-            const eased = 1 - Math.pow(1 - p, 3)
-            setValue(Math.round(target * eased))
-            if (p < 1) requestAnimationFrame(tick)
-          }
-          requestAnimationFrame(tick)
+      ([e]) => {
+        if (e.isIntersecting) {
+          setInView(true)
           io.disconnect()
         }
       },
-      { threshold: 0.4 },
+      { threshold },
     )
     io.observe(el)
     return () => io.disconnect()
-  }, [target, duration])
-  return [ref, value]
+  }, [threshold])
+  return [ref, inView]
+}
+
+// 3D tilt + moving glare for cards. Writes --rx/--ry (tilt) and --gx/--gy
+// (glare position, %) on the element; CSS does the rest. Mouse/trackpad only.
+export function useCardTilt(max = 7) {
+  const ref = useRef(null)
+  useEffect(() => {
+    const el = ref.current
+    if (!el) return
+    const fine = window.matchMedia('(hover: hover) and (pointer: fine)').matches
+    const reduced = window.matchMedia('(prefers-reduced-motion: reduce)').matches
+    if (!fine || reduced) return
+    let frame = 0
+    const move = (e) => {
+      const r = el.getBoundingClientRect()
+      const x = (e.clientX - r.left) / r.width
+      const y = (e.clientY - r.top) / r.height
+      cancelAnimationFrame(frame)
+      frame = requestAnimationFrame(() => {
+        el.style.setProperty('--ry', `${((x - 0.5) * max).toFixed(2)}deg`)
+        el.style.setProperty('--rx', `${((0.5 - y) * max).toFixed(2)}deg`)
+        el.style.setProperty('--gx', `${(x * 100).toFixed(1)}%`)
+        el.style.setProperty('--gy', `${(y * 100).toFixed(1)}%`)
+      })
+    }
+    const leave = () => {
+      cancelAnimationFrame(frame)
+      el.style.setProperty('--rx', '0deg')
+      el.style.setProperty('--ry', '0deg')
+    }
+    el.addEventListener('pointermove', move)
+    el.addEventListener('pointerleave', leave)
+    return () => {
+      cancelAnimationFrame(frame)
+      el.removeEventListener('pointermove', move)
+      el.removeEventListener('pointerleave', leave)
+    }
+  }, [max])
+  return ref
 }
 
 // Sets the document title for the current page (SPA).

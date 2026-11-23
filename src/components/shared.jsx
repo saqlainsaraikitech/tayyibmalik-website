@@ -1,7 +1,7 @@
 import { useState } from 'react'
 import { Link } from 'react-router-dom'
 import { COUNTERS, PRACTICES, SITE } from '../data'
-import { useCountUp } from '../hooks'
+import { useCardTilt, useInView } from '../hooks'
 import Icon from '../icons'
 
 export function SectionHead({ eyebrow, index, title, sub, center = false, dark = false }) {
@@ -35,13 +35,46 @@ export function PageBanner({ eyebrow, title, crumb }) {
   )
 }
 
-function Counter({ value, suffix, label }) {
-  const [ref, current] = useCountUp(value)
+// Odometer: each digit is a strip of 0-9 (twice, for an extra spin) that rolls
+// up to its final digit. Digits further right roll a little longer, like a meter.
+const DIGIT_STRIP = [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 0, 1, 2, 3, 4, 5, 6, 7, 8, 9]
+
+function Odometer({ text, run, baseDelay }) {
+  let digitIndex = 0
   return (
-    <div className="counter" ref={ref}>
-      <div className="counter-value">
-        {current.toLocaleString('en-US')}
-        {suffix}
+    <span className={`odometer${run ? ' run' : ''}`} aria-hidden="true">
+      {[...text].map((ch, i) => {
+        if (!/\d/.test(ch)) return <span key={i} className="odo-sep">{ch}</span>
+        const d = Number(ch)
+        const order = digitIndex++
+        return (
+          <span key={i} className="odo-digit">
+            <span
+              className="odo-strip"
+              style={{
+                '--to': d + 10, // land in the second 0-9 run so it spins past once
+                '--delay': `${baseDelay + order * 90}ms`,
+              }}
+            >
+              {DIGIT_STRIP.map((n, k) => (
+                <span key={k}>{n}</span>
+              ))}
+            </span>
+          </span>
+        )
+      })}
+    </span>
+  )
+}
+
+function Counter({ value, suffix, label, index }) {
+  const [ref, inView] = useInView(0.4)
+  const text = value.toLocaleString('en-US')
+  return (
+    <div className="counter reveal" ref={ref} style={{ transitionDelay: `${index * 110}ms` }}>
+      <div className="counter-value" aria-label={`${text}${suffix}`}>
+        <Odometer text={text} run={inView} baseDelay={index * 150} />
+        <span aria-hidden="true">{suffix}</span>
       </div>
       <div className="counter-label">{label}</div>
     </div>
@@ -52,8 +85,8 @@ export function Counters() {
   return (
     <section className="counters" aria-label="Firm results">
       <div className="container">
-        {COUNTERS.map((c) => (
-          <Counter key={c.label} {...c} />
+        {COUNTERS.map((c, i) => (
+          <Counter key={c.label} index={i} {...c} />
         ))}
       </div>
     </section>
@@ -81,7 +114,7 @@ export function CtaBand() {
     <section className="cta-band">
       <div className="cta-bg" />
       <div className="container">
-        <div>
+        <div className="reveal">
           <span className="eyebrow">Talk to us! We promise we can help you!</span>
           <h2>You can trust us to get you the justice you deserve.</h2>
         </div>
@@ -95,10 +128,14 @@ export function CtaBand() {
 }
 
 export function AppointmentForm({ idPrefix }) {
-  const [sent, setSent] = useState(false)
+  // '' | 'whatsapp' | 'email' — which channel the request was handed to.
+  const [sent, setSent] = useState('')
 
+  // No backend: the request is handed to WhatsApp (works on every phone and on
+  // WhatsApp Web) or to the visitor's email app, already filled in.
   const submit = (e) => {
     e.preventDefault()
+    const via = e.nativeEvent.submitter?.value === 'email' ? 'email' : 'whatsapp'
     const data = new FormData(e.currentTarget)
     const subject = `Appointment Request — ${data.get('category') || 'General'}`
     const body = [
@@ -110,8 +147,13 @@ export function AppointmentForm({ idPrefix }) {
       'Case details:',
       data.get('message') || '',
     ].join('\n')
-    window.location.href = `mailto:${SITE.email}?subject=${encodeURIComponent(subject)}&body=${encodeURIComponent(body)}`
-    setSent(true)
+    if (via === 'whatsapp') {
+      const text = `${subject}\n\n${body}`
+      window.open(`${SITE.whatsappLink}?text=${encodeURIComponent(text)}`, '_blank', 'noopener')
+    } else {
+      window.location.href = `mailto:${SITE.email}?subject=${encodeURIComponent(subject)}&body=${encodeURIComponent(body)}`
+    }
+    setSent(via)
   }
 
   return (
@@ -154,25 +196,26 @@ export function AppointmentForm({ idPrefix }) {
           <textarea id={`${idPrefix}-message`} name="message" rows="5" placeholder="Write case details" required />
         </div>
       </div>
-      <p className="form-submit-row">
-        <button className="btn btn-gold btn-block" type="submit">
-          Make an Appointment
+      <div className="form-submit-row">
+        <button className="btn btn-gold btn-block" type="submit" value="whatsapp">
+          <Icon name="whatsapp" size={17} />
+          Send on WhatsApp
+        </button>
+        <button className="btn btn-ghost btn-block" type="submit" value="email">
+          Send by Email
           <Icon name="arrow" size={17} />
         </button>
-      </p>
+      </div>
       {sent && (
-        <p className="form-success">
-          Thank you. Your email app should now open with your appointment request addressed to {SITE.email} — just
-          press send.
+        <p className="form-success" role="status">
+          {sent === 'whatsapp'
+            ? 'Thank you. WhatsApp has opened with your appointment request filled in — just press send.'
+            : `Thank you. Your email app should now open with your request addressed to ${SITE.email} — just press send.`}
         </p>
       )}
       <p className="form-note">
-        This form opens your email app with your details addressed to the firm. For an immediate response, call{' '}
-        <a href={`tel:${SITE.calls}`}>{SITE.calls}</a> or WhatsApp{' '}
-        <a href={SITE.whatsappLink} target="_blank" rel="noopener noreferrer">
-          {SITE.whatsapp}
-        </a>
-        .
+        Your details are filled into a WhatsApp or email message to the firm; nothing is sent until you press send.
+        Prefer to call? <a href={`tel:${SITE.calls}`}>{SITE.calls}</a>
       </p>
     </form>
   )
@@ -180,8 +223,12 @@ export function AppointmentForm({ idPrefix }) {
 
 // Premium practice card: 3D-render photo header with zoom + icon chip — no humans in images.
 export function PracticeImageCard({ practice, index }) {
+  const tiltRef = useCardTilt()
   return (
-    <article className="practice-card reveal" style={{ transitionDelay: `${(index % 3) * 70}ms` }}>
+    // --stagger (not an inline transition-delay) so the delay applies only to the
+    // scroll-in reveal and never makes the hover tilt feel laggy.
+    <article ref={tiltRef} className="practice-card reveal" style={{ '--stagger': `${(index % 3) * 70}ms` }}>
+      <span className="practice-glare" aria-hidden="true" />
       <Link className="practice-media" to={`/practice-area#${practice.slug}`} aria-label={practice.name}>
         <span className="practice-media-img">
           <img src={practice.img} alt={`${practice.name} — Tayyib Malik & Co.`} width="1200" height="675" loading="lazy" />

@@ -30,6 +30,7 @@ function Layout() {
   return (
     <>
       <ScrollManager />
+      <div className="scroll-progress" aria-hidden="true" />
       <TopBar />
       <Header />
       <div className="page-fade" key={pathname}>

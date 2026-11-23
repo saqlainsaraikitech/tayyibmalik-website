@@ -11,8 +11,12 @@ export const SITE = {
   address: "Office No.1, 3rd Floor, Silver City Plaza, (Soneri Bank's Building), G-11, Markaz Islamabad",
   mapsLink:
     'https://www.google.com/maps/search/?api=1&query=Office+No.1%2C+3rd+Floor%2C+Silver+City+Plaza%2C+G-11+Markaz+Islamabad',
+  // Hero copy split in two so phones see the buttons on the first screen;
+  // heroDetail is hidden on small screens (same wording as the live site).
   heroIntro:
-    'is a leading law firm based in Islamabad, Pakistan providing high-quality legal and corporate advisory services at national and international levels. With a team of experienced advocates, barristers, and consultants, the Firm offers strategic legal solutions in corporate, civil, constitutional, and commercial matters, ensuring professional excellence, integrity, and client-focused representation.',
+    'A leading law firm in Islamabad, Pakistan, providing high-quality legal and corporate advisory services at national and international levels.',
+  heroDetail:
+    'With a team of experienced advocates, barristers, and consultants, the Firm offers strategic legal solutions in corporate, civil, constitutional, and commercial matters, ensuring professional excellence, integrity, and client-focused representation.',
 }
 
 export const NAV = [
