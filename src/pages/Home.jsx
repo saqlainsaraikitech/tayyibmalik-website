@@ -51,7 +51,9 @@ function TypewriterName() {
     if (reduced || !canvasRef.current) return
     const layer = createParticleLayer(canvasRef.current)
     const h1 = h1Ref.current
-    if (h1) layer.resize(h1.offsetWidth + SPARK_PAD * 2, h1.offsetHeight + SPARK_PAD * 2)
+    // Height pads only the top: the canvas ends at the heading's bottom edge,
+    // so sparks can never splash onto the intro paragraph below it.
+    if (h1) layer.resize(h1.offsetWidth + SPARK_PAD * 2, h1.offsetHeight + SPARK_PAD)
     layerRef.current = layer
     return () => {
       layer.destroy()
@@ -62,7 +64,7 @@ function TypewriterName() {
   useLayoutEffect(() => {
     const h1 = h1Ref.current
     if (!layerRef.current || !h1) return
-    layerRef.current.resize(h1.offsetWidth + SPARK_PAD * 2, h1.offsetHeight + SPARK_PAD * 2)
+    layerRef.current.resize(h1.offsetWidth + SPARK_PAD * 2, h1.offsetHeight + SPARK_PAD)
   }, [layoutTick])
 
   // Typed a letter → sparks. Erased a letter → it dissolves into rising dust.
