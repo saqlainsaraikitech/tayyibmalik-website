@@ -99,12 +99,17 @@ function TypewriterName() {
     if (!chars[0] || !h1) return
     // Cursor sits after the last visible letter (or before the first one when empty).
     // Measured in screen coordinates relative to the <h1>, because the gold <em>
-    // is itself positioned and would skew offsetLeft/offsetTop. (Letters only fade
-    // and un-blur — no transform — so their boxes never move while animating.)
+    // is itself positioned and would skew offsetLeft/offsetTop.
+    // The letter span's box is the font's full line box (tall ascenders), so a
+    // caret sized from it straddles the line break when the name wraps. Size it
+    // to the visible glyphs instead: ~cap height, bottom near the baseline.
     const box = h1.getBoundingClientRect()
     const r = (count > 0 ? chars[count - 1] : chars[0]).getBoundingClientRect()
     const left = (count > 0 ? r.right : r.left) - box.left
-    setCaret({ left, top: r.top - box.top, height: r.height })
+    const fs = parseFloat(getComputedStyle(h1).fontSize) || r.height
+    const height = fs * 0.85
+    const top = r.bottom - box.top - fs * 0.12 - height
+    setCaret({ left, top, height })
   }, [count, layoutTick])
 
   useEffect(() => {
