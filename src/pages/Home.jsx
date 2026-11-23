@@ -19,8 +19,8 @@ import {
 const NAME_PLAIN = 'Tayyib Malik '
 const NAME_GOLD = '& Co.'
 const NAME_FULL = NAME_PLAIN + NAME_GOLD
-const TYPE_MS = 85 // per letter while writing
-const ERASE_MS = 38 // per letter while erasing
+const TYPE_MS = 150 // per letter while writing
+const ERASE_MS = 70 // per letter while erasing
 const HOLD_MS = 2600 // full name stays on screen
 const EMPTY_MS = 500 // pause before writing again
 const START_MS = 400 // first letter after page load
