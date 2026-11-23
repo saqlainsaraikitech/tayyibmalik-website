@@ -1,0 +1,9 @@
+# Tayyib Malik & Co. — React SPA (Vite production build)
+RewriteEngine On
+# Old nav link /pro-bono/ -> canonical pro bono page
+RewriteRule ^pro-bono/?$ /pro-bono-services [R=301,L]
+# SPA fallback: real files pass through, every other route serves the app
+RewriteCond %{REQUEST_FILENAME} !-f
+RewriteCond %{REQUEST_FILENAME} !-d
+RewriteRule ^ index.html [L]
+Options -Indexes
